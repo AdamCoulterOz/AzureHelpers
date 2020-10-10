@@ -1,4 +1,3 @@
-
 function Remove-Databases {
     param (
         [string] $Server,

@@ -19,5 +19,3 @@ function Get-AzToken {
     Write-Information "Got token for: $Target."
     return $token
 }
-
-Export-ModuleMember -Function @('Get-AzToken')
