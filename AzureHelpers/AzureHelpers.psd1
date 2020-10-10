@@ -48,7 +48,7 @@ PowerShellVersion = '7.0'
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-RequiredModules = @('Az.Storage','Az.Accounts')
+# RequiredModules = @()
 
 # Assemblies that must be loaded prior to importing this module
 # RequiredAssemblies = @()
@@ -113,7 +113,7 @@ PrivateData = @{
         # RequireLicenseAcceptance = $false
 
         # External dependent modules of this module
-        # ExternalModuleDependencies = @()
+        ExternalModuleDependencies = @('Az.Storage','Az.Accounts')
 
     } # End of PSData hashtable
 
