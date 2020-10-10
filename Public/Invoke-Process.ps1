@@ -8,35 +8,41 @@ function Invoke-Process {
     [OutputType([string])]
     [CmdletBinding()]
     param(
-        [String] $path,
-        [String[]] $arguments,
-        [Parameter(ValueFromPipeline)][string]$pipeline
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [String] $Command,
+
+        [Parameter(ValueFromRemainingArguments = $true)]
+        [String[]] $Arguments,
+
+        [Parameter(ValueFromPipeline)]
+        [string]$Pipeline
     )
 
-    $fullPath = ""
-    $exists = Test-Path $path
+    $commandPath = ""
+    $exists = Test-Path $Command
     if ($exists -eq $True) { 
-        $fullPath = $path
+        $commandPath = $Command
     }
     else { 
         try {
-            $command = Get-Command $path -ErrorAction Stop
-            $fullPath = $command.Path
+            $pathCommand = Get-Command $Command -ErrorAction Stop
+            $commandPath = $pathCommand.Path
         }
         catch {
-            Write-Error "Specified path '$path' cannot be found as a program in PATH or filesystem."
+            Write-Error "Specified command '$Command' cannot be found as a program in PATH or filesystem."
         }
     }
 
     $InformationPreference = 'Continue'
     $output = ""
     [Process] $process = [Process]::new()
-    $process.StartInfo.FileName = $fullPath
+    $process.StartInfo.FileName = $commandPath
     $process.StartInfo.UseShellExecute = $false
     $process.StartInfo.RedirectStandardOutput = $true
     $process.StartInfo.RedirectStandardError = $true
     $process.StartInfo.RedirectStandardInput = $true
-    $arguments.ForEach( { $process.StartInfo.ArgumentList.Add($_) })
+    $Arguments.ForEach( { $process.StartInfo.ArgumentList.Add($_) })
 
     $ErrEvent = Register-ObjectEvent -Action {
         Write-Warning $EventArgs.Data
@@ -45,9 +51,9 @@ function Invoke-Process {
     $process.Start() | Out-Null
     $process.BeginErrorReadLine() | Out-Null
 
-    if(![String]::IsNullOrEmpty($pipeline))
+    if(![String]::IsNullOrEmpty($Pipeline))
     {
-        [Task] $writerTask = $process.StandardInput.WriteAsync($pipeline)
+        [Task] $writerTask = $process.StandardInput.WriteAsync($Pipeline)
     }
 
     # cant set ReadTimeout as it isnt supported on this Stream Type
@@ -58,7 +64,7 @@ function Invoke-Process {
         $output += $outputLine + [Environment]::NewLine
     }
     
-    if(![String]::IsNullOrEmpty($pipeline))
+    if(![String]::IsNullOrEmpty($Pipeline))
     {
         $writerTask.GetAwaiter().GetResult() | Out-Null
     }
@@ -70,11 +76,11 @@ function Invoke-Process {
     Unregister-Event -SourceIdentifier $ErrEvent.Name | Out-Null
 
     if ($exitCode -gt 0) {
-        $errorMsg = "Process failed to complete successfully: $path, with exit code: $exitCode."
+        $errorMsg = "Process failed to complete successfully: $Command, with exit code: $exitCode."
         Write-Error $errorMsg
         throw $errorMsg
     }
 
-    Write-Information "Completed $path."
+    Write-Information "Completed $Command."
     return $output
 }

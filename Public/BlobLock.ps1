@@ -5,10 +5,10 @@ function Get-Blob {
     [OutputType([AzureStorageBlob])]
     param (
         [PSAzureContext] $AzContext,
-        [String] $ResourceGroupName = 'bluewater',
-        [String] $StorageAccountName = $env:SENTRAL_ORG_STORAGE_ACCOUNT,
-        [String] $ContainerName = 'deploy',
-        [String] $BlobName = 'db.lock'
+        [String] $ResourceGroupName,
+        [String] $StorageAccountName,
+        [String] $ContainerName,
+        [String] $BlobName
     )
     Set-AzContext -Context $AzContext
     Set-AzCurrentStorageAccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName
