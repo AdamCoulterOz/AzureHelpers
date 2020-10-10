@@ -15,6 +15,8 @@ $ExportedFunctions = $ModuleInformation.ExportedFunctions.Values.Name
 # Get the functions present in the Public folder
 $PS1Functions = Get-ChildItem -Path $(Join-Path $ModulePath 'Public' '*.ps1')
 
+Import-Module @('Az.Accounts','Az.Storage') -Force
+
 Describe "$ModuleName Module - Testing Manifest File (.psd1)" {
     Context "Manifest" {
         It "Should contain RootModule" {
