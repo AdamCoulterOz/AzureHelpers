@@ -1,0 +1,109 @@
+using namespace Microsoft.Azure.Commands.Common.Authentication
+using namespace System.Management.Automation
+
+function checkVariables {
+    param ([string[]]$checkEnvVariables, $authType)
+    foreach ($envVar in $checkEnvVars) {
+        $envValue = [Environment]::GetEnvironmentVariable($envVar)
+        if ([string]::IsNullOrEmpty($envValue)) {
+            Write-Error "Environment variable '$envVar' must be set to use the $authType authentication type."
+        }
+    }
+}
+
+function AzureLogin {
+    [OutputType([String])]
+    param ([string]$resourceURI)
+
+    $authMethodVarName = 'AzureAuthMethod'
+
+    $envValue = [Environment]::GetEnvironmentVariable($authMethodVarName)
+    if ([string]::IsNullOrEmpty($envValue)) {
+        Write-Error "Environment variable '$authMethodVarName' must be set to use AzureLogin."
+    }
+    switch ([string]$authMethod) {
+        'UserInteractive' { AzureLoginUser; return LocalAccessToken $resourceURI }
+        'ClientSecret' { AzureLoginServicePrincipal; return LocalAccessToken $resourceURI }
+        'ClientCert' { }
+        'SystemAssigned' { AzureLoginManaged }
+        'UserAssigned' { AzureLoginManagedUser }
+        'AppServiceSystemAssigned' { AzureLogin $env:UserAssignedIdentity }
+        'AppServiceUserAssigned' { }
+        Default { Write-Error "No valid authentication method set in AzureAuthMethod environment variable. Current value '$authMethod'." }
+    }
+}
+
+function checkForMetadataService {
+    $queryParameters = @{'format' = 'text'; 'api-version' = '2020-06-01' }
+    Invoke-RestMethod -Uri 'http://169.254.169.254/metadata' -Headers @{Metadata = 'true' } -Body $queryParameters -TimeoutSec 2 | Out-Null
+}
+
+function AzureLoginUser {
+    Connect-AzAccount -Tenant $env:AzureTenantId | Write-Information
+}
+
+function AzureLoginServicePrincipal {
+
+    checkVariables @('AzureClientId', 'AzureClientSecret', 'AzureTenantId')
+
+    $clientId = $env:AzureClientId
+    $clientSecret = $env:AzureClientSecret
+    $tenantId = $env:AzureTenantId
+
+    $password = ConvertTo-SecureString $clientSecret -AsPlainText -Force
+    $credential = [PSCredential]::new($clientId, $password)
+    Connect-AzAccount -Tenant $tenantId -Credential $credential -ServicePrincipal | Write-Information
+}
+
+function AzureLoginManaged {
+    param ([switch]$UserAssigned = $false)
+    
+    if ($UserAssigned) {
+        checkVariables @('AzureClientId')
+        $clientId = $env:AzureClientId
+        Connect-AzAccount -Identity -AccountId $clientId | Write-Information
+    }
+    else {
+        Connect-AzAccount -Identity | Write-Information
+    }
+}
+
+function AccessTokenLocal {
+    [OutputType([String])]
+    param ([string]$resourceURI)
+    $context = Get-AzContext
+    $azureSession = [AzureSession]::Instance.AuthenticationFactory.Authenticate( `
+            $context.Account, $context.Environment, $context.Subscription.TenantId, $null, [ShowDialog]::Never, $null, $resourceURI)
+    $accessToken = $azureSession.AccessToken
+    return $accessToken
+}
+
+function AccessTokenAppService {
+    [OutputType([String])]
+    param ([string]$ResourceURI, [switch]$UserAssigned = $false)
+
+    checkVariables @('IDENTITY_ENDPOINT', 'IDENTITY_HEADER')
+
+    $tokenAuthURI = $env:IDENTITY_ENDPOINT
+    $idHeader = $env:IDENTITY_HEADER
+    $clientId = ""
+
+    if ($UserAssigned) {
+        checkVariables @('UserAssignedIdentity')
+        $clientId = $env:UserAssignedIdentity
+    }
+
+    $headers = @{
+        "X-IDENTITY-HEADER" = $idHeader
+    }
+    $queryParameters = @{
+        'resource'    = $ResourceURI
+        'api-version' = '2019-08-01'
+    }
+    if (![String]::IsNullOrEmpty($ClientId)) {
+        $queryParameters.Add('client_id', $env:UserAssignedIdentity)
+    }
+    $tokenResponse = Invoke-RestMethod -Headers $headers -Uri $tokenAuthURI -Body $queryParameters
+    $accessToken = $tokenResponse.access_token
+    return $accessToken
+}

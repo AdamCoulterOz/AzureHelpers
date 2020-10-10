@@ -1,0 +1,80 @@
+using namespace System
+using namespace System.IO
+using namespace System.Collections.Generic
+using namespace System.Diagnostics
+using namespace System.Threading.Tasks
+
+function Invoke-Process {
+    [OutputType([string])]
+    [CmdletBinding()]
+    param(
+        [String] $path,
+        [String[]] $arguments,
+        [Parameter(ValueFromPipeline)][string]$pipeline
+    )
+
+    $fullPath = ""
+    $exists = Test-Path $path
+    if ($exists -eq $True) { 
+        $fullPath = $path
+    }
+    else { 
+        try {
+            $command = Get-Command $path -ErrorAction Stop
+            $fullPath = $command.Path
+        }
+        catch {
+            Write-Error "Specified path '$path' cannot be found as a program in PATH or filesystem."
+        }
+    }
+
+    $InformationPreference = 'Continue'
+    $output = ""
+    [Process] $process = [Process]::new()
+    $process.StartInfo.FileName = $fullPath
+    $process.StartInfo.UseShellExecute = $false
+    $process.StartInfo.RedirectStandardOutput = $true
+    $process.StartInfo.RedirectStandardError = $true
+    $process.StartInfo.RedirectStandardInput = $true
+    $arguments.ForEach( { $process.StartInfo.ArgumentList.Add($_) })
+
+    $ErrEvent = Register-ObjectEvent -Action {
+        Write-Warning $EventArgs.Data
+    } -InputObject $process -EventName ErrorDataReceived
+
+    $process.Start() | Out-Null
+    $process.BeginErrorReadLine() | Out-Null
+
+    if(![String]::IsNullOrEmpty($pipeline))
+    {
+        [Task] $writerTask = $process.StandardInput.WriteAsync($pipeline)
+    }
+
+    # cant set ReadTimeout as it isnt supported on this Stream Type
+    #$process.StandardOutput.BaseStream.ReadTimeout = 200
+    while (!$process.StandardOutput.EndOfStream) {
+        $outputLine = $process.StandardOutput.ReadLine()
+        Write-Information $outputLine
+        $output += $outputLine + [Environment]::NewLine
+    }
+    
+    if(![String]::IsNullOrEmpty($pipeline))
+    {
+        $writerTask.GetAwaiter().GetResult() | Out-Null
+    }
+        
+    $process.WaitForExit() | Out-Null
+    $exitCode = $process.ExitCode
+    $process.Close() | Out-Null
+
+    Unregister-Event -SourceIdentifier $ErrEvent.Name | Out-Null
+
+    if ($exitCode -gt 0) {
+        $errorMsg = "Process failed to complete successfully: $path, with exit code: $exitCode."
+        Write-Error $errorMsg
+        throw $errorMsg
+    }
+
+    Write-Information "Completed $path."
+    return $output
+}
