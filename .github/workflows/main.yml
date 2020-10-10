@@ -23,6 +23,6 @@ jobs:
         uses: pcgeek86/publish-powershell-module-action@v19
         with:
           # The filesystem path to the module to import into the environment.
-          modulePath: $GITHUB_WORKSPACE
+          # modulePath: $GITHUB_WORKSPACE
           # The NuGet API Key for PowerShell Gallery, with permission to push this module.
           NuGetApiKey: ${{ secrets.POWERSHELLGALLERYAPIKEY }}
