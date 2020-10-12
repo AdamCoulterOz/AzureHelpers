@@ -1,6 +1,13 @@
 using namespace Microsoft.Azure.Commands.Common.Authentication
 using namespace System.Management.Automation
 
+function Select-AzSubscription {
+    if(![string]::IsNullOrEmpty($env:AzureSubscription))
+    {
+        Set-AzContext -SubscriptionId $env:AzureSubscription | Write-Information
+    }
+}
+
 function CheckEnvVariables {
     param ([string[]]$variables)
     foreach ($envVar in $variables) {
@@ -17,6 +24,7 @@ function AzureLoginUser {
 
     CheckEnvVariables @('AzureTenantId')
     Connect-AzAccount -Tenant $env:AzureTenantId | Write-Information
+    Select-AzSubscription | Write-Information
 }
 
 function AzureLoginServicePrincipal {
@@ -38,6 +46,7 @@ function AzureLoginServicePrincipal {
         $credential = [PSCredential]::new($clientId, $password)
         Connect-AzAccount -Tenant $tenantId -ServicePrincipal -Credential $credential | Write-Information
     }
+    Select-AzSubscription | Write-Information
 }
 
 function AzureLoginManaged {
@@ -52,6 +61,7 @@ function AzureLoginManaged {
     else {
         Connect-AzAccount -Identity | Write-Information
     }
+    Select-AzSubscription | Write-Information
 }
 
 function AccessTokenLocal {
@@ -118,3 +128,4 @@ function Get-AccessToken {
         'AppServiceUserAssigned' { return AccessTokenAppService $ResourceURI -UserAssigned }
     }
 }
+
