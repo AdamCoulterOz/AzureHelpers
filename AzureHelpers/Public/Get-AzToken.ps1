@@ -5,8 +5,20 @@ function Get-AzToken {
         [string]$Target = 'Management',
 
         [ValidateSet('UserInteractive', 'ClientSecret', 'ClientCert', 'SystemAssigned', 'UserAssigned', 'AppServiceSystemAssigned', 'AppServiceUserAssigned')]
-        [string]$AuthMethod = 'UserInteractive'
+        [string]$AuthMethod
     )
+
+    if([string]::IsNullOrEmpty($AuthMethod)) {
+        if(![string]::IsNullOrEmpty($env:AzureAuthMethod))
+        {
+            $AuthMethod = $env:AzureAuthMethod
+        }
+        else {
+            $ErrorActionPreference = 'Stop'
+            Write-Error "AuthMethod must be set either as an argument or an environment variable."
+        }
+    }
+
 
     Write-Information "Get token for $Target ..."
     [String] $token = $Null
