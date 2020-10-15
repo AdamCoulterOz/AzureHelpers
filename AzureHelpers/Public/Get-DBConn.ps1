@@ -11,9 +11,11 @@ function Get-DBConn {
         [ValidateNotNullOrEmpty()]
         [string]$password
     )
+    $ErrorActionPreference = 'Stop'
     $connArgs = Get-DBConnArgs -hostname $hostname -username $username -password $password
+    Write-Warning "Connection Arguments: $connArgs"
     $connected = Connect-DB -arguments $connArgs
-    if($connected) {
+    if($connected -eq $true) {
         return $connArgs
     } else {
         throw "Database connection failed."
