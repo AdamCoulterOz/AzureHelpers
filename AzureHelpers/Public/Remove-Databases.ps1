@@ -15,7 +15,7 @@ function Remove-Databases {
 
     $nl = [Environment]::NewLine
     $arguments += "--skip-column-names"
-    $databaseLines = $("show databases; $nl exit $nl" | Invoke-Process -path 'mysql' -arguments $arguments)
+    $databaseLines = $("show databases; $nl exit $nl" | Invoke-Process -Command 'mysql' -Arguments $arguments)
     $databases = $databaseLines.Trim().Split("$nl")
 
     $commands = ""
@@ -32,5 +32,5 @@ function Remove-Databases {
     }
     $commands += "exit $nl"
 
-    $commands | Invoke-Process -path 'mysql' -arguments $arguments
+    $commands | Invoke-Process -Command 'mysql' -Arguments $arguments
 }
