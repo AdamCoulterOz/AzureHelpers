@@ -24,13 +24,16 @@ function Remove-Databases {
     foreach ($database in $databases) {
         if (-not ($exclude.Contains($database))) {
             if ($database.StartsWith($Prefix)) {
+                $startTime = Get-Date
+                Write-Information "Dropping database $database ..."
                 $commands += "use $database; $nl `
                         SET FOREIGN_KEY_CHECKS=0; $nl `
-                        drop database $database; $nl"
+                        drop database $database; $nl exit $nl"
+                Invoke-Process -Command 'mysql' -Arguments $arguments
+                $endTime = Get-Date
+                $timeTaken = New-TimeSpan –Start $startTime –End $endTime
+                Write-Information "Dropped database $database in $($timeTaken.TotalSeconds) seconds."
             }
         }
     }
-    $commands += "exit $nl"
-
-    $commands | Invoke-Process -Command 'mysql' -Arguments $arguments
 }
