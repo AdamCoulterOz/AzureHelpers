@@ -88,8 +88,8 @@ function AccessTokenAppService {
     $clientId = ""
 
     if ($UserAssigned) {
-        CheckEnvVariables @('UserAssignedIdentity')
-        $clientId = $env:UserAssignedIdentity
+        CheckEnvVariables @('AzureClientId')
+        $clientId = $env:AzureClientId
     }
 
     $headers = @{
@@ -100,7 +100,7 @@ function AccessTokenAppService {
         'api-version' = '2019-08-01'
     }
     if (![String]::IsNullOrEmpty($ClientId)) {
-        $queryParameters.Add('client_id', $env:UserAssignedIdentity)
+        $queryParameters.Add('client_id', $env:AzureClientId)
     }
     $tokenResponse = Invoke-RestMethod -Headers $headers -Uri $tokenAuthURI -Body $queryParameters
     $accessToken = $tokenResponse.access_token
