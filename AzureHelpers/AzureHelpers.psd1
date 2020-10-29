@@ -12,7 +12,7 @@
     RootModule        = 'AzureHelpers'
 
     # Version number of this module.
-    ModuleVersion     = '0.4.4'
+    ModuleVersion     = '0.4.5'
 
     # Supported PSEditions
     # CompatiblePSEditions = @()
@@ -98,7 +98,7 @@
             # LicenseUri = ''
 
             # A URL to the main website for this project.
-            # ProjectUri = ''
+            ProjectUri = 'http://github.com/adamCoulterOz/AzureHelpers'
 
             # A URL to an icon representing this module.
             # IconUri = ''
