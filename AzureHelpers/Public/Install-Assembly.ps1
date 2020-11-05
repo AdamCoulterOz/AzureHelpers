@@ -17,17 +17,26 @@ function Install-Assembly {
 
         Write-Verbose -vb "Installing package '$packageName'..."
 
-        $null = Get-Command -ErrorAction Stop -CommandType Application dotnet
+        Get-Command -ErrorAction Stop -CommandType Application dotnet | Write-Information
 
         Push-Location (New-Item -ErrorAction Stop -Type Directory "$PSScriptRoot/$projectFolder")
 
-        $null = dotnet new classlib
-        $null = dotnet add package $packageName @('-v', $packageVersion)
-        $null = dotnet publish -c Release
+        Invoke-Process -Command dotnet -Arguments @('new', 'classlib') | Write-Information
+        Invoke-Process -Command dotnet -Arguments @('add', 'package','-v', $packageVersion) | Write-Information
+        Invoke-Process -Command dotnet -Arguments @('publish', '-c','Release') | Write-Information
   
         Pop-Location
 
         Write-Verbose -vb "Loading main assembly: $assemblyPath"  
         Add-Type -ErrorAction Stop -Path $assemblyPath
+
+        Write-Information "Adding Azure.Identity Type ..."
+        $dlls = (Get-ChildItem -Path "$PSScriptRoot/$projectFolder/bin/Release/*/publish/" -Filter "*.dll").FullName
+        foreach ($dll in $dlls)
+        {
+            Add-Type -Path $dll
+        }
+        #Add-Type -ErrorAction Stop -Path "$PSScriptRoot/Azure.Identity/Azure.Identity.dll" | Write-Information
+        Write-Information "Added Azure.Identity Type."
     }
 }
