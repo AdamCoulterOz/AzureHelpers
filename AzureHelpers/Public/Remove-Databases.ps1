@@ -20,6 +20,7 @@ function Remove-Databases {
 
     $exclude = @("Database", "mysql", "information_schema", "performance_schema", "sys")
     $nl = [Environment]::NewLine
+    $overallStartTime = Get-Date
     foreach ($database in $databases) {
         if (-not ($exclude.Contains($database))) {
             if ($database.StartsWith($Prefix)) {
@@ -35,4 +36,7 @@ function Remove-Databases {
             }
         }
     }
+    $overallEndTime = Get-Date
+    $timeTaken = New-TimeSpan –Start $overallStartTime –End $overallEndTime
+    Write-Information "Dropped all databases in $($timeTaken.TotalSeconds) seconds."
 }
