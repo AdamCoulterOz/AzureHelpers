@@ -76,7 +76,7 @@ function Invoke-Process {
     Unregister-Event -SourceIdentifier $ErrEvent.Name | Out-Null
 
     if ($exitCode -gt 0) {
-        throw "Process failed to complete successfully: $Command, with exit code: $exitCode. Output received was: $output."
+        throw "Process failed to complete successfully: $Command $Arguments, with exit code: $exitCode. Any errors have been previously been written to the Warning (stderr) steam, output received was: $output."
     }
 
     Write-Information "Completed $Command."
