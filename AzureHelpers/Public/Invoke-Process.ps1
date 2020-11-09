@@ -19,7 +19,7 @@ function Invoke-Process {
         [string]$Pipeline
     )
 
-    $hasPipeline = [string]::IsNullOrEmpty($Pipeline)
+    $hasPipeline = ![string]::IsNullOrEmpty($Pipeline)
     Write-Information "Starting Invoke-Process for '$Command $Arguments'. Has stdin: '$hasPipeline'."
 
     $commandPath = ""
